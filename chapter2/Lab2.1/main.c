@@ -13,12 +13,10 @@ volatile uint32_t* UART0_LCRH   = (uint32_t*)(UART0_BASE + 0x2C);  // Line contr
 volatile uint32_t* UART0_CR     = (uint32_t*)(UART0_BASE + 0x30);  // Control register
 
 // GPIO registers
-// GPIO registers
 volatile uint32_t* GPFSEL1      = (uint32_t*)(GPIO_BASE + 0x04);   // GPIO function select (for GPIO 16)
 volatile uint32_t* GPFSEL2      = (uint32_t*)(GPIO_BASE + 0x08);   // GPIO function select (for GPIO 21)
 volatile uint32_t* GPSET0       = (uint32_t*)(GPIO_BASE + 0x1C);   // GPIO set (turn ON)
 volatile uint32_t* GPCLR0       = (uint32_t*)(GPIO_BASE + 0x28);   // GPIO clear (turn OFF)
-
 
 #define LED_PIN   21u
 #define LED_MASK  (1u << LED_PIN)

@@ -1,0 +1,56 @@
+*.o
+*.img
+
+# Sphinx build directories
+docs/_build/
+docs/_static/
+docs/_templates/
+docs/_out/  # If using Jupyter Book
+
+# Cache and environment files
+.cache/
+.venv/
+venv/
+.env/
+.envrc
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+
+# Editor files
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Auto-generated files
+/generated/
+.autosummary/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments (alternative patterns)
+[Ee]n[Vv]/
+[Pp]ython[Vv]env/
+
+# pytest cache
+.pytest_cache/
+
+# MkDocs (if used alongside Sphinx)
+site/
+
+# TeX build files (for LaTeX output)
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
