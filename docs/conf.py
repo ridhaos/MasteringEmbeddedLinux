@@ -24,6 +24,8 @@ author = 'Ridha Noomane'
 # The full version, including alpha/beta/rc tags
 release = '1.0.0'
 
+# Strip problematic Unicode chars during build
+suppress_warnings = ['rest.unicode']
 
 # -- General configuration ---------------------------------------------------
 
@@ -62,5 +64,14 @@ latex_elements = {
         \DeclareUnicodeCharacter{2212}{-}
         \usepackage{textcomp}  
     ''',
+    'preamble': r'''
+        \DeclareUnicodeCharacter{200B}{\hspace{0pt}}
+    ''',
+    'preamble': r'''
+        \DeclareUnicodeCharacter{2003}{\hspace{1em}}
+    ''',
+    'preamble': r'''
+        \DeclareUnicodeCharacter{200B}{\hskip0pt} % treat ZWSP as zero-width
+    '''
     
 }

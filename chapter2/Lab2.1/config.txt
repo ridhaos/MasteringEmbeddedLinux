@@ -1,0 +1,12 @@
+# config.txt — bare-metal friendly
+start_file=start4.elf
+fixup_file=fixup4.dat
+
+kernel=kernel8.img
+
+
+arm_64bit=1          # make firmware look for kernel8.img (64-bit)
+enable_uart=1        # keep GPIO14/15 mapped to PL011 so the
+dtoverlay=disable-bt #   Bluetooth overlay doesn’t steal the pins
+gpu_mem=16           # smallest legal split; leaves ≈ 1008 MB for ARM
+disable_splash=1     # skip rainbow square
