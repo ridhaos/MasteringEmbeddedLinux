@@ -3,9 +3,9 @@ CFLAGS := -O2 -ffreestanding -nostdlib -mcpu=cortex-a72
 ASFLAGS := -mcpu=cortex-a72
 
 
-SRC_C   := blink.c
+SRC_C   := main.c
 SRC_S   := start.S
-OBJ     := start.o blink.o
+OBJ     := start.o main.o
 ELF     := blink.elf
 IMG     := kernel8.img          # filename required by the Boot ROM
 
