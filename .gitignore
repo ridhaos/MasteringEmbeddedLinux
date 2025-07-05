@@ -1,5 +1,9 @@
+# All bin build
 *.o
 *.img
+*.bin
+*.elf
+
 
 # Sphinx build directories
 docs/_build/
