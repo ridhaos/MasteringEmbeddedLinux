@@ -10,8 +10,16 @@ Welcome to Mastering Embedded Linux's Book!
    :maxdepth: 2
    :caption: Contents:
 
-   source/chapter1.rst
-   source/chapter2.rst
+   source/chapter1
+   source/chapter2
+
+Annexe
+=======
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   source/annexes
 
 Indices and tables
 ==================
