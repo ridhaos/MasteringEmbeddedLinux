@@ -1,3 +1,5 @@
+.. _chapter2-Bootloaders-uboot:
+
 **Bootloaders and U-Boot**
 =====================================
 In this chapter we dive deep into the world of bootloaders explaining what 
@@ -19,7 +21,7 @@ microcontroller or SoC into a platform capable of running a full
 operating system**.
 
 2.1.1 Why Do We Need a Bootloader?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. **Hardware Initialisation**  - Configure clocks, DRAM, MMU, caches,
    watchdogs.
@@ -93,13 +95,13 @@ operating system**.
    (proprietary) perform SPL duties.
 -  Developers may **optionally replace the “kernel” with U-Boot** to
    gain flexibility, networking, and scripting.
--  The Pi’s EEPROM-based firmware can boot from SD, USB, or network
+-  The Pi's EEPROM-based firmware can boot from SD, USB, or network
    without external flash making *bare-metal* demos easy.
 
 2.1.6 Key Takeaways
 ~~~~~~~~~~~~~~~~~~~
 
--  A bootloader’s main job is to **prepare hardware, verify code, and
+-  A bootloader's main job is to **prepare hardware, verify code, and
    hand control to the OS**.
 -  Most embedded boards follow a **ROM → tiny-loader → full-loader →
    kernel** progression.
@@ -111,7 +113,7 @@ operating system**.
 2.2 Raspberry pi boot chain:
 ----------------------------
 
-The Raspberry Pi 4’s boot sequence is atypical among ARM boards because
+The Raspberry Pi 4's boot sequence is atypical among ARM boards because
 it is orchestrated primarily by the **GPU** rather than the ARM cores.
 Below is a concise refresher so you know exactly *who* boots *whom*
 
@@ -132,25 +134,28 @@ exists**:
 +-------------+-------------+-------------+-------------+-------------+
 | **BootROM** | 32 KB       | Mask ROM    | • Check     | Har         |
 |             |             | (SoC)       | boot-mode   | dware-level |
-|             |             |             | pins•       | fault →     |
-|             |             |             | Initialise  | board dead  |
-|             |             |             | minimal     |             |
+|             |             |             | pins.       |             |
+|             |             |             |             |             |
+|             |             |             |•Initialise  | fault →     |
+|             |             |             | minimal     | board dead  |
 |             |             |             | SRAM• Clock |             |
 |             |             |             | SD card and |             |
 |             |             |             | read sector |             |
 |             |             |             | 0x200       |             |
+|             |             |             |             |             |
 +-------------+-------------+-------------+-------------+-------------+
 | **PI 4      | 100 KB      | SPI EEPROM  | • Bring up  | Corrupt     |
 | EEPROM**    |             | (or SD on   | DDR4        | EEPROM →    |
-|             |             | older Pi)   | controller• | green-LED   |
-|             |             |             | Initialise  | pattern 1   |
+|             |             | older Pi)   | controller  |             |
+|             |             |             |             | green-LED   |
+|             |             |             | •Initialise | pattern 1   |
 |             |             |             | PMIC &      | long 4      |
 |             |             |             | PLLs• Load  | short       |
 |             |             |             | *           |             |
 |             |             |             | start4.elf* |             |
 |             |             |             | from FAT    |             |
 +-------------+-------------+-------------+-------------+-------------+
-| **s         | 3 -5 MB      | FAT         | Parse       | Wrong       |
+| **s         | 3 -5 MB     | FAT         | Parse       | Wrong       |
 | tart4.elf** |             | partition   | config.txt  | overlay →   |
 | *(GPU       |             |             | and run     | rainbow     |
 | firmware)*  |             |             | .img file.  | splash / no |
@@ -167,7 +172,7 @@ exists**:
 |             |             |             | and pass    |             |
 |             |             |             | dtb.        |             |
 +-------------+-------------+-------------+-------------+-------------+
-| **Linux     | 8 -10 MB     | ext4 or FAT | • Setup     | Kernel      |
+| **Linux     | 8 -10 MB    | ext4 or FAT | • Setup     | Kernel      |
 | Kernel**    | (Image)     |             | paging,     | panic,      |
 |             |             |             | MMU, IRQs•  | rootfs not  |
 |             |             |             | Initialise  | found       |
@@ -228,7 +233,7 @@ first code the CPU runs after the GPU relinquishes control, giving us
 complete authority over the board before the kernel starts.
 
 2.3.1 Lab Overview  - Crafting a *Minimal Bootloader* that Blinks an LED
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this exercise we **treat the blink program itself as a
 micro-bootloader**. Instead of loading a full OS, the GPU jumps straight
@@ -240,7 +245,7 @@ toggles the on-board LED, then loops forever.
 *GitHub repo:
 https://github.com/ridhaos/MasteringEmbeddedLinux/tree/master/chapter2/Lab2.1*
 
-**What you’ll learn**
+**What you'll learn**
 
 -  How the Pi 4 firmware selects and jumps to *kernel8.img* (stage 4 of
    the boot chain).
@@ -267,7 +272,7 @@ Power-On \rightarrow BootROM \rightarrow bootcode.bin \rightarrow start4.elf \ri
 2.3.2 High Level Steps:
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Let’s begin first by creating directory:**myDirectory** where you will
+Let's begin first by creating directory:**myDirectory** where you will
 work.
 
 Create 4 files : **boot.S**, **main.c**, **link.ld** and **Makefile**.
@@ -281,7 +286,7 @@ under your directory to be like this :
    -  **Makefile** : for compilation and image creation flow.
 
 Start by main program :
-=======================
+^^^^^^^^^^^^^^^^^^^^^^^
 
  *BCM2711 : Raspberry Pi soc datasheet:*
 https://datasheets.raspberrypi.com/bcm2711/bcm2711-peripherals.pdf
@@ -372,7 +377,7 @@ https://datasheets.raspberrypi.com/bcm2711/bcm2711-peripherals.pdf
 
 
 Line-by-line explanation
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``#include <stdint.h>``
    Gives us fixed-width types (`uint32_t`) with **no** runtime overhead;
@@ -432,7 +437,7 @@ Main loop
 6. Repeat forever.
 
 Key take-aways
---------------
+^^^^^^^^^^^^^^^^^^
 
 * *Memory-mapped I/O* means “write a value, hardware changes”.
 * ``volatile`` prevents the optimiser from deleting essential reads
@@ -445,14 +450,13 @@ Key take-aways
 .. _baremetal-startup-stub:
 
 The start-up stub in ``start.S``
-================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Before the C function :c:func:`main` can run, the CPU needs **one**
 absolutely minimal bit of assembly: a *reset handler* that sets up a
 stack and jumps into C.  That is what the file ``start.S`` provides.
 
-Source listing
---------------
+**Source listing:**
 
 .. code-block:: asm
    :linenos:
@@ -476,7 +480,7 @@ Source listing
    _stack_top:
 
 Line-by-line explanation
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #. ``.section .text``  
    Selects the *text* section machine instructions that will end up in
@@ -501,7 +505,7 @@ Line-by-line explanation
    but the instruction is convenient because most ABIs assume
    :c:func:`main` is called   not jumped to.
 
-#. ``1: b 1b``  
+#. ``1: b 1b``
    A local label ``1`` followed by ``b 1b`` (*b*ack to the most recent
    label “1”).  If :c:func:`main` ever returns, the CPU lands here and
    enters an infinite spin instead of fetching random memory.
@@ -518,7 +522,7 @@ Stack reservation in ``.bss``
 * ``_stack_top`` is the **label** whose address we loaded into ``sp``.
 
 Key take-aways
---------------
+^^^^^^^^^^^^^^^^
 
 * **Just three instructions** (load, move, branch) turn a powered-up
   Cortex-A72 into a C-friendly environment.
@@ -532,7 +536,7 @@ Key take-aways
 .. _baremetal-linker-make:
 
 Now it time to explain  - ``linker.ld`` and ``Makefile``
-=======================================================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 With **main.c** and **start.S** written, we still need two build-system
 artifacts:
@@ -548,7 +552,7 @@ line.
 -------------------------------------------------------------------------------
 
 The linker script  - ``linker.ld``
------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: c
    :linenos:
@@ -580,12 +584,12 @@ The linker script  - ``linker.ld``
           }
       }
 
-Explanation
-~~~~~~~~~~~
+Explanation of linker.ld
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * **Line 1  -** comment only; useful in large projects.
 * **Line 3 (`ENTRY`)**  - names the symbol the ELF header marks as the
-  program’s entry point. ``objcopy`` keeps that information, so the
+  program's entry point. ``objcopy`` keeps that information, so the
   debugger can still “run” the ELF even though the Pi firmware ignores
   it.
 * **Line 6 (`. = 0x80000;`)**  - sets the location counter; the first
@@ -599,7 +603,7 @@ Explanation
   in the header grows.
 
 Key take-aways
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 * A one-liner ``. = 0x80000`` is usually the only Pi-specific change
   you need; the rest is standard GNU ld syntax.
@@ -609,7 +613,7 @@ Key take-aways
 -------------------------------------------------------------------------------
 
 The build recipe  - ``Makefile``
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: make
    :linenos:
@@ -642,8 +646,8 @@ The build recipe  - ``Makefile``
       clean:
       	rm -f $(OBJ) $(ELF) $(IMG)
 
-Explanation
-~~~~~~~~~~~
+Explanation of Makefile
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Variable block (lines 1-8)
   * ``CROSS``  - lets readers override the triplet with
@@ -659,10 +663,13 @@ Rules (lines 10-25)
 | Target                  | What happens                                                       |
 +-------------------------+--------------------------------------------------------------------+
 | **pattern rules (%.o)** | Compile or assemble a single source file into an object file.      |
++-------------------------+--------------------------------------------------------------------+
 | **``blink.elf``**       | Link objects with the custom script.                               |
++-------------------------+--------------------------------------------------------------------+
 | **``kernel8.img``**     | Strip the ELF into a flat binary no headers, no alignment padding. |
++-------------------------+--------------------------------------------------------------------+
 | **``make clean``**      | Delete everything that can be regenerated.                         |
-+-------------+--------------------------------------------------------------------------------+
++-------------------------+--------------------------------------------------------------------+
 
 Why **`start.o` first**?
   Object order decides *section order* unless the linker script says
@@ -670,7 +677,7 @@ Why **`start.o` first**?
   0x80000 even if someone removes the ``KEEP`` directive later.
 
 Key take-aways
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 * A *three-step* build compile, link, objcopy is all you need for
   bare-metal projects.
@@ -692,7 +699,7 @@ blinks and the UART greets you, proof that the entire build chain is
 correct.
 
 Let's test our kernel8.img
-==========================
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In github repository you will find:
    * fixup4.dat
    * start4.elf
@@ -719,7 +726,7 @@ what we did and how led start blinking. Enjoy !!
    Figure 5: Raspberry 4 schematic.
 
 2.3.3  Looking Ahead
---------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 Our bare-metal LED blinker has done its job: you have proved that any
 binary the firmware places at **0x80000** can act as a bootloader.
@@ -743,19 +750,471 @@ recovery, and rapid iteration.
 2.4 Introduction U-Boot:
 ------------------------
 
-History, design philosophy, and core features (CLI, scripting, drivers).
+Among all bootloaders available today, **Das U-Boot** (universal bootloader) has emerged 
+as the dominant solution, particularly in the ARM ecosystem.
+
+U-Boot serves as the critical bridge between hardware initialization and 
+operating system launch, performing essential functions like:
+
+* Hardware initialization (CPU, memory, clocks)
+* Loading the operating system kernel from storage or network
+* Providing a pre-boot environment for configuration and debugging
+* Supporting secure boot and verification processes
+
+What makes U-Boot remarkable is its combination of:
+
+- **Portability** (runs on nearly every architecture)
+- **Flexibility** (supports countless storage and boot methods)
+- **Robustness** (battle-tested on thousands of boards)
+- **Community support** (backed by major silicon vendors)
+
+Before we build and flash our own U-Boot image, let's examine how this 
+open-source project became the de facto standard for embedded systems worldwide.
+
+2.4.1 A Short History & Motivation:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **1999** - "PPCBoot" started as a PowerPC-only loader for embedded boards.
+* **2002** - Renamed "Das U-Boot" (German for The Boot) when ARM, MIPS, and x86 support were merged.
+* **2004-2010** - Added FAT/ext, USB, networking stacks, scripting, NAND/UBI.
+* **2012+** - Adopted Linux-style kconfig build system; SPL concept formalised; FIT image signatures, DFU, and device model introduced.
+
+Today U-Boot supports 2500+ boards across ARM, RISC-V, x86, MIPS, PowerPC, and even FPGA soft-cores.
+
+2.4.2 U-Boot Advantage:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+U-Boot has become the dominant bootloader in embedded systems due to several key advantages:
+
+.. list-table:: Capabilities
+   :header-rows: 1
+   :widths: 20 80
+
+   * - **Capability**
+     - **Why It Matters in Embedded Development**
+   * - **Unified CLI**
+     - Same commands (``load``/``booti``/``printenv``) work everywhere
+   * - **Rich driver set**
+     - Supports SD/eMMC, USB, Ethernet, SPI-NOR, I²C, PCIe
+   * - **Script Engine**
+     - Conditional logic inside ``boot.scr``
+   * - **Networking**
+     - TFTP, NFS, DHCP, BOOTP for headless ops
+   * - **SPL + tertiary loader**
+     - Tiny (<40 KB) SPL sets up DRAM then jumps to U-Boot
+   * - **Secure Boot**
+     - FIT signing (RSA/ECDSA)
+   * - **Menuconfig build**
+     - Familiar ``make menuconfig`` UI
+
+These capabilities make U-Boot uniquely suited for embedded development across diverse hardware platforms.
+
+.. _sec-u-boot-comparison:
+
+2.4.3 U-Boot vs Other Bootloaders
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++------------+-------------------------------+-----------+-------------------------------+
+| **Feature**| **U-Boot**                    | **barebox** | **TF-A (Trusted Firmware)** |
++============+===============================+===========+===============================+
+| Target     | First + second stage,         | Same,      | Secure Monitor (BL31)        |
+| scope      | interactive shell             | Linux-like | only                         |
+|            |                               | API        |                              |
++------------+-------------------------------+------------+------------------------------+
+| CLI &      | Yes                           | Yes        | Minimal                      |
+| scripting  |                               |            |                              |
++------------+-------------------------------+------------+------------------------------+
+| Build      | *kconfig*                     | *kconfig*  | CMake                        |
+| config     |                               |            |                              |
++------------+-------------------------------+------------+------------------------------+
+| Secure     | FIT image-signing (RSA/ECDSA) | Raw SHA/   | Primary **raison d'être**    |
+| Boot       | + TEE hooks                   | RSA hooks  |                              |
++------------+-------------------------------+------------+------------------------------+
+| Raspberry  | Mature, actively maintained   | Community  | N/A                          |
+| Pi status  |                               | port only  |                              |
++------------+-------------------------------+------------+------------------------------+
+
+.. tip::
+
+   Need a quick feature check?  Type ``help`` at the U-Boot prompt;
+   every compiled-in command is listed.
+
+
+2.4.4 U-Boot SPL concept:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In U-Boot, SPL(Secondery Program Loader) is crucial concept, especially in systems with
+limited boot memory (like embedded devices).
+
+#. **What is SPL ?** : 
+   * SPL is stripped down version of U-Boot that runs before the main U-Boot.
+   * It is responsible for *Basic Hardware Initialisation* and loading the full U-Boot.
+
+#. **What use SPL ?** : 
+   * Memory constraints.
+   * Faster boot time.
+
+
+2.4.5 Why Choose U-Boot for Raspberry Pi 4?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. **Community support** - the ``rpi_4_defconfig`` is kept up-to-date in
+   mainline; patches land quickly.
+#. **Feature parity** - USB-MSC boot, *ext4*, TFTP, and the network console
+   all work *without* proprietary blobs.
+#. **Scriptable recovery** - implement A/B fallback in a one-line
+   ``bootcmd`` snippet.
+#. **Scalability** - the same build recipe covers Pi Zero 2 W, CM4, and
+   future boards.
+
+2.4.6 What We'll Do Next
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Build** U-Boot with an external cross-toolchain.
+* **Flash** it by copying ``u-boot.bin`` to the FAT partition and tweaking
+  ``config.txt``.
+* **Explore** the CLI - memory pokes (``md``, ``mw``), image loading
+  (``fatload``, ``tftpboot``) and kernel launch (``booti``).
+* **Persist** environment variables in EEPROM or SD.
+* **Secure** the boot chain with basic FIT-image signing.
+
+.. admonition:: Ready?
+
+   Grab your serial cable—next up is :ref:`sec-build-uboot`
+   where we compile and run U-Boot on the Pi 4.
+
+.. _sec-build-uboot:
 
 2.5 Building U-Boot for Raspberry Pi:
 -------------------------------------
 
-Step-by-step cross-compile (make rpi_4_defconfig), SPL vs U-Boot proper,
-toolchain requirements.
+This section turns the theory from 2.4 into practice.  
+We compile mainline **U-Boot**, integrate a *bare-metal* LED-blink
+payload linked at **0x00200000**, and produce ready-to-boot files for the
+Pi 4.
+
+.. contents::
+   :local:
+   :depth: 2
+
+
+2.5.1 Prerequisites
+~~~~~~~~~~~~~~~~~~~~
+
+* **Host OS** - Ubuntu 22.04 LTS (any modern Linux works)
+* **Packages**
+
+  .. code-block:: bash
+
+     $ sudo apt update
+     $ sudo apt install gcc-aarch64-linux-gnu \
+                        make git build-essential \
+                        libssl-dev bison flex bc
+
+* **Cross-compiler triplet**  
+  Throughout this chapter we use
+
+  .. code-block:: bash
+
+     CROSS_COMPILE=aarch64-linux-gnu-
+
+  Feel free to substitute a pre-built toolchain (Linaro, ARM GNU, etc.).
+
+* **Clone the sources**
+
+  .. code-block:: bash
+
+     $ git clone https://github.com/ridhaos/MasteringEmbeddedLinux.git
+     $ git clone https://source.denx.de/u-boot/u-boot.git
+
+
+2.5.2 Repository Layout & Helper Files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The lab directory lives under:
+
+::
+
+   chapter2/
+   └─ Lab2.2/
+      ├─ blink/              # bare-metal payload
+      │  ├─ main.c
+      │  ├─ linker.ld        # linked at 0x00200000
+      │  └─ Makefile
+      ├─ run.sh              # one-shot build helper
+      └─ u-boot/             # cloned mainline U-Boot
+
+.. _lab22-makefile:
+
+Let's start by explain *Makefile*:
+
+**blink/Makefile** (excerpt)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../chapter2/Lab2.2/blink/Makefile
+   :language: make
+   :lines: 1-30
+
+Key lines:
+
+* ``CROSS_COMPILE`` — forwarded from the parent script.
+* ``LDFLAGS := -T linker.ld`` — ensures the payload starts at **0x00200000**.
+* ``arm-none-eabi-objcopy -O binary`` — produces a raw
+  *blink.bin* ready for SD card.
+
+**What is ``rpi_4_defconfig``?**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Mainline U-Boot keeps *board presets* in ``configs/``.  
+The target we use:
+
+::
+
+   configs/rpi_4_defconfig
+
+enables:
+
+* 64-bit ARM (AArch64) build
+* Minimal SPL + full U-Boot proper
+* USB, SD/eMMC, *ext4*, FAT, network (ETH PHY) drivers
+* Default console on PL011 UART at 115 200 bps
+
+Invoke it with:
+
+.. code-block:: bash
+
+   $ make rpi_4_defconfig
+
+to populate ``.config`` with all Pi-4-specific options.
+
+.. _lab22-run-script:
+
+**run.sh** - One-Shot Builder
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. literalinclude:: ../../chapter2/Lab2.2/run.sh
+   :language: bash
+   :emphasize-lines: 13,20,26
+
+The script:
+
+#. Exports common flags (``ARCH=arm64 CROSS_COMPILE=…``).  
+#. Builds **blink.bin** with the Makefile above.  
+#. Builds **U-Boot** with *rpi_4_defconfig* on all host cores.  
+#. Drops **u-boot.bin** and **blink.bin** in the lab root for easy copying.
+
+.. note::
+
+   Only *one* address changed from Lab 2·1 —  
+   ``linker.ld`` now we remove ``_start`` flag at **0x0020 0000**
+   and replace it  with main.
+
+2.5.3 Compiling U-Boot & the Payload
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   $ cd chapter2/Lab2.2
+   $ ./run.sh
+
+Expected artefacts:
+
+::
+
+   blink.bin   #  3.6 KiB  - bare-metal LED blinker
+   u-boot.bin  # ~1.3 MiB  - full U-Boot for Pi 4
+
+Verify the entry addresses:
+
+.. code-block:: bash
+
+   $ aarch64-linux-gnu-nm -h blink.elf
+
+Look for ``main`` around *0x0020 0000*.
+
+
+2.5.4 Deploying to the SD Card
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. Mount the Pi's FAT partition (e.g. ``/media/$USER/BOOT``).  
+#. Copy both binaries:
+
+   .. code-block:: bash
+
+      $ cp blink.bin  /media/$USER/BOOT
+      $ cp u-boot.bin /media/$USER/BOOT
+
+#. Edit *config.txt*:
+
+   .. code-block:: text
+
+      arm_64bit=1
+      enable_uart=1
+      kernel=u-boot.bin
+
+Power-cycle the board and open the serial console.  
+At the U-Boot prompt:
+
+.. code-block:: bash
+
+   => load mmc 0:1 ${loadaddr} blink.bin
+   => go ${loadaddr}
+
+A heartbeat LED confirms the custom payload runs before the kernel.
+
+Common Pitfalls
+^^^^^^^^^^^^^^^^
+
++---------------------------+-------------------------------------------------+
+| **Symptom**               | **Fix**                                         |
++===========================+=================================================+
+| Solid red power LED only  | Check SD wiring, rename *kernel8.img* back if   |
+|                           | the Pi's EEPROM is too old for *kernel=*.       |
++---------------------------+-------------------------------------------------+
+| ``Bad ELF magic`` in      | You copied the *ELF* output, not *blink.bin*.   |
+| U-Boot                    | Use ``objcopy -O binary`` artefact.             |
++---------------------------+-------------------------------------------------+
+
+2.5.5 What's Next?
+~~~~~~~~~~~~~~~~~~~~
+
+Now that **U-Boot boots reliably** and can launch an arbitrary
+bare-metal blob, we move on to *interactive exploration*:
+
+* Navigating the CLI  
+* Persisting environment variables  
+* Booting a full **Linux kernel** from SD, USB, or TFTP
+
+Continue with :ref:`sec-flash-firstboot`.
+
+.. _sec-flash-firstboot:
 
 2.6 Flashing and First boot test:
 ---------------------------------
 
-Copying u-boot.bin via FAT partition, editing config.txt, and verifying
-serial console output.
+With **U-Boot** and your custom *blink.bin* payload compiled, the next step
+is to drop both files onto an SD-card, power-up the Pi 4, and verify that
+everything works.
+
+2.6.1 Prepare the SD Card
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. **Erase / format** the card as FAT-32 (the Pi's first-stage firmware
+   requires a FAT partition).
+
+#. **Mount** it on the host, e.g. ``/media/$USER/BOOT``.
+
+#. **Copy** the artefacts built in :ref:`chapter2-Bootloaders-uboot`:
+
+   .. code-block:: bash
+
+      cp blink.bin  /media/$USER/BOOT
+      cp u-boot.bin /media/$USER/BOOT
+
+   **Resulting directory layout**
+
+   +----------------+-------------------------------+
+   | File           | Purpose                       |
+   +================+===============================+
+   | **u-boot.bin** | Second-stage bootloader       |
+   +----------------+-------------------------------+
+   | **blink.bin**  | Bare-metal LED payload at     |
+   |                | 0x00200000 (Lab 2.2)          |
+   +----------------+-------------------------------+
+   | config.txt     | Tells the GPU firmware which  |
+   |                | binary to load                |
+   +----------------+-------------------------------+
+
+2.6.2 Edit *config.txt*
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Append (or modify) the following keys:
+
+.. code-block:: text
+
+   # --- Lab 2.2 U-Boot + Blink ------------------
+   arm_64bit=1
+   enable_uart=1         # serial console on GPIO14/15
+   kernel=u-boot.bin     # hand control to U-Boot
+   #----------------------------------------------
+
+Save **config.txt**, unmount the card, and insert it into the Pi 4.
+
+.. note::
+
+   Older EEPROM firmware may ignore ``kernel=``.  
+   If you see no serial output, update the EEPROM with the official
+   ``rpi-eeprom-update`` tool (see § 2.2.1).
+
+2.6.3 First Power-Up
+~~~~~~~~~~~~~~~~~~~~~
+
+Connect a **3.3 V serial cable** (115 200 N 8 1) to GPIO 14 / 15, then:
+
+.. code-block:: bash
+
+   sudo minicom -b 115200 -D /dev/ttyUSB0 
+
+Power on the Pi 4:
+
+::
+
+   U-Boot 2024.01 (Jul 6 2025 - 14:42:15 +0000)  RPi_4
+   DRAM:  886 MiB (effective 3.8 GiB)
+   RPI 4 Model B (0xc03114)
+   Core:  213 devices, 17 uclasses, devicetree: board
+   MMC:   mmcnr@7e300000: 1, mmc@7e340000: 0
+   Loading Environment from FAT... Unable to read "uboot.env" from mmc0:1... 
+   In:    serial,usbkbd
+   Out:   serial,vidconsole
+   Err:   serial,vidconsole
+   Net:   eth0: ethernet@7d580000
+   …
+   Hit any key to stop autoboot:  2 ⏳ 1 ⏳ 0
+   =>
+
+If you see the prompt, U-Boot is alive and reading ``u-boot.bin`` from
+the FAT partition.
+
+2.6.4 Launch the Blink Payload
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Still at the ``=>`` prompt:
+
+.. code-block:: bash
+
+   => load mmc 0:1 ${loadaddr} blink.bin
+   => go ${loadaddr}
+
+*GPIO 21* should toggle at ~1 Hz.  
+(No LED? Confirm the board revision or use a scope on the pin.)
+
+2.6.5 Quick Recovery Tips
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
++------------------------------+----------------------------------+
+| **Symptom**                  | **Action**                       |
++==============================+==================================+
+| UART shows **“`Bad ELF`”**   | You copied the wrong file—use    |
+|                              | *blink.bin* (raw binary).        |
++------------------------------+----------------------------------+
+| Green ACT LED blinks 4x long | ``kernel=u-boot.bin`` missing    |
+| then 4x short                | or bad SD; double-check FAT32.   |
++------------------------------+----------------------------------+
+| Nothing on UART              | Out-of-date EEPROM; update it    |
+|                              | per the Raspberry Pi docs.       |
++------------------------------+----------------------------------+
+
+2.6.6 What's Next?
+~~~~~~~~~~~~~~~~~~~
+
+Now that **U-Boot** boots and can chain-load a bare-metal blob, the next
+logical step is to **explore the CLI**, store environment variables, and
+ultimately boot a full **Linux** image.
+
+Continue with :ref:`sec-uboot-cli` to discover the U-Boot command
+interface in depth.
+
 
 2.7 Navigating the U-Boot CLI:
 ------------------------------

@@ -56,6 +56,7 @@ void uart_puts(const char* str) {
     }
 }
 
+__attribute__((section(".text.main")))
 // Main program
 void main() {
     // Initialize UART
